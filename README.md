@@ -1,6 +1,6 @@
 Gopled: A Go Parallel Library for Edit Distance (String, Tree, Graph)
 
-Gopled is a library written in Go, designed for calculating the edit distance (Levenshtein distance) across various data structures including strings, trees, and graphs. For each of these data structures, GOPLED offers both a sequential and a parallel version, allowing users to choose the most suitable approach based on their specific requirements and computational resources.
+Gopled is a library written in Go, designed for calculating the edit distance (Levenshtein distance) across various data structures including strings, trees, and graphs. For each of these data structures, Gopled offers both a sequential and a parallel version, allowing users to choose the most suitable approach based on their specific requirements and computational resources.
 
 1. String Edit Distance:
 
