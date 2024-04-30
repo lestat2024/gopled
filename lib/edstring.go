@@ -112,6 +112,33 @@ func computeFullTileRegular(first, second string, dp [][]int, tileStartRow, tile
 	}
 }
 
+func computeFullTileRegular_large(first, second string, vdp [][]int, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond int, g_top_row, g_left_col []int) {
+
+	
+	// step 1: make the matrix for the tile, copy the input boundary
+	// vdp: [first_half is bottom, second_half is right]
+	// my tile (x,y): 1: (x, y-1)[first_half] 2: (x-1, y)[second_half]; 3: (x-1,y-1)[first_half][tilesize -1]
+	// out of boundary -- go to the gtop row and gleft col.
+	
+	// step 2: fill the matrix
+
+	// step 3: copy the output boundary
+
+	
+	
+	for i := 0; i < tileSize; i++ {
+		row := tileStartRow + i
+		for j := 0; j < tileSize; j++ {
+			col := tileStartCol + j
+			cost := 1
+			if first[row-1] == second[col-1] {
+				cost = 0
+			}
+			vdp[row][col] = min3(vdp[row-1][col]+1, vdp[row][col-1]+1, vdp[row-1][col-1]+cost)
+		}
+	}
+}
+
 
 
 
@@ -238,6 +265,96 @@ func editDistanceParallel(first, second string, tileSize int, useavx bool) int {
 	}
 
 	return dp[lenFirst][lenSecond]
+}
+
+
+
+func editDistanceParallel_large(first, second string, tileSize int, useavx bool) int {
+
+	lenFirst, lenSecond := len(first), len(second)
+
+	if lenFirst == 0 || lenSecond == 0 {
+		return lenFirst + lenSecond
+	}
+
+	//dp := make([][]int, lenFirst+1)
+	//for i := range dp {
+	//	dp[i] = make([]int, lenSecond+1)
+	//}
+
+	//for i := 0; i <= lenFirst; i++ {
+	//	dp[i][0] = i
+	//}
+	//for j := 0; j <= lenSecond; j++ {
+	//	dp[0][j] = j
+	//}
+
+
+	g_top_row := make([]int, lenSecond + 1)
+	for j := 0; j <= lenSecond; j++ {
+		g_top_row[j] = j
+	}
+	
+	g_left_col := make([]int, lenFirst + 1)
+	for i := 0; i <=lenFirst; i++{
+		g_left_col[i] = i
+	}
+
+	m := ((lenFirst) + tileSize - 1) / tileSize
+	n := ((lenSecond) + tileSize - 1) / tileSize
+
+	vdp := make([][]int, m * n)
+	for i := range vdp {
+		vdp[i] = make([]int, 2 * tileSize)
+	}
+
+	
+
+	var wg sync.WaitGroup
+
+	totalWavefronts := n + m - 1
+	
+	for wave := 0; wave < totalWavefronts; wave++ {
+		minStart := max(0, wave-n+1)
+		maxStart := min(wave, m-1)
+
+		for start := minStart; start <= maxStart; start++ {
+
+			tileStartRow := start*tileSize + 1
+			tileStartCol := (wave-start)*tileSize + 1
+
+			wg.Add(1)
+
+			isBoundaryTile := 0
+			if tileStartRow+tileSize > lenFirst || tileStartCol+tileSize > lenSecond {
+				isBoundaryTile = 1
+			}
+
+			go func(p1, p2 string, p3 [][]int, p4, p5, p6, p7, p8 int, p9, p10 []int) {
+
+				defer wg.Done()
+
+				if isBoundaryTile == 1 {
+					computeBoundaryTile_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+				} else {
+					computeFullTileRegular_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+
+					//if useavx && tileSize > 64 && (tileSize&(tileSize-1)) == 0 {
+					//	computeFullTileC_large(p1, p2, p3, p4, p5, p6, p7, p8)
+					//} else {
+					//	computeFullTileRegular_large(p1, p2, p3, p4, p5, p6, p7, p8)
+					//}
+				}
+
+			}(first, second, vdp, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond, g_top_row, g_left_col)
+
+		}
+
+		wg.Wait()
+	}
+
+	//return dp[lenFirst][lenSecond]
+	return vdp[m*n - 1][tileSize - 1]
 }
 
 
