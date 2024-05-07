@@ -322,7 +322,7 @@ func editDistanceParallel(first, second string, tileSize int, useavx bool) int {
 			wg.Add(1)
 
 			isBoundaryTile := 0
-			if tileStartRow+tileSize > lenFirst || tileStartCol+tileSize > lenSecond {
+			if (tileStartRow-1)+tileSize > lenFirst || (tileStartCol-1)+tileSize > lenSecond {
 				isBoundaryTile = 1
 			}
 
@@ -460,15 +460,6 @@ func EditDistanceParallel(first string, second string, tilesize ...int) int {
 
 	useavx := (C.c_check_avx2_support() == 1)
 
-	//return editDistanceParallel(first, second, tsv, useavx)
+	return editDistanceParallel_large(first, second, tsv, useavx)
 
-	result := 0
-
-	if tsv > 64 && (tsv&(tsv-1)) == 0 {
-		result = editDistanceParallel_large(first, second, tsv, useavx)
-	} else {
-		result = editDistanceParallel_large(first, second, tsv, useavx)
-	}
-
-	return result
 }

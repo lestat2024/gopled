@@ -22,7 +22,6 @@ func generateRandomString(length int) string {
 
 func main() {
 
-
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: gopled-cmd <tileSize> <stringLength>")
 		return
@@ -49,8 +48,9 @@ func main() {
 	str1 := generateRandomString(slen)
 	str2 := generateRandomString(slen)
 
-	//str1 := "kitten"
-	//str2 := "sitting"
+	//tileSize = 2
+	//str1 := "bbb"
+	//str2 := "a"
 
 	//fmt.Println("x = : ", str1)
 	//fmt.Println("y = : ", str2)
