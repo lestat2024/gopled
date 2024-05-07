@@ -145,7 +145,7 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 	} else {
 		//copy from boundary array
 		copy_length := tileSize
-		if tileStartCol+tileSize > lenSecond {
+		if (tileStartCol-1)+tileSize > lenSecond {
 			copy_length = lenSecond - tileStartCol + 1
 		}
 
@@ -167,7 +167,7 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 
 	} else {
 		copy_length := tileSize
-		if tileStartRow+tileSize > lenFirst {
+		if (tileStartRow-1)+tileSize > lenFirst {
 			copy_length = lenFirst - tileStartRow + 1
 		}
 		for i := 1; i <= copy_length; i++ {
@@ -212,12 +212,12 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 	// step 3: copy the output boundary
 
 	bottom_row_id := tileSize
-	if tileStartRow+tileSize > lenFirst {
+	if (tileStartRow-1)+tileSize > lenFirst {
 		bottom_row_id = lenFirst - tileStartRow + 1
 	}
 
 	right_col_id := tileSize
-	if tileStartCol+tileSize > lenSecond {
+	if (tileStartCol-1)+tileSize > lenSecond {
 		right_col_id = lenSecond - tileStartCol + 1
 	}
 
@@ -233,7 +233,7 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 
 	// step 4: if this is the right tile, we must copy the last value to the middle position of vdp[last_tile]
 
-	if my_x == (m-1) && my_y == (n-1) {
+	if my_x == (n-1) && my_y == (m-1) {
 		vdp[this_tile_idx][tileSize-1] = tileMatrix[bottom_row_id][right_col_id]
 	}
 
