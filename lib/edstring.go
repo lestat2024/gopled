@@ -349,6 +349,111 @@ func computeTileFull_large(first, second string, vdp [][]int, tileStartRow, tile
 
 }
 
+func computeTileFull_largeCX(first, second string, vdp [][]int, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond int, g_top_row, g_left_col []int) {
+
+	// step 1: make the matrix for the tile, copy the input boundary
+	// vdp: [first_half is bottom, second_half is right]
+	// my tile (x,y): 1: (x, y-1)[first_half] 2: (x-1, y)[second_half]; 3: (x-1,y-1)[first_half][tilesize -1]
+	// out of boundary -- go to the gtop row and gleft col.
+
+	// m is height, n is width
+	//m := ((lenFirst) + tileSize - 1) / tileSize
+	n := ((lenSecond) + tileSize - 1) / tileSize
+
+	my_x := (tileStartCol - 1) / tileSize
+	my_y := (tileStartRow - 1) / tileSize
+
+	my_up := my_y - 1
+	my_left := my_x - 1
+
+	rowbuf := make([]C.int, (tileSize + 1))
+	colbuf := make([]C.int, (tileSize + 1))
+
+	rowbuf[0] = -1
+	colbuf[0] = -1
+
+	// copy top row
+	if my_up >= 0 {
+		//copy from up tile
+		for i := 1; i <= tileSize; i++ {
+			up_tile_idx := (my_up)*n + (my_x)
+			//tileMatrix[0][i] = vdp[up_tile_idx][i-1]
+			rowbuf[i] = C.int(vdp[up_tile_idx][i-1])
+		}
+
+	} else {
+		//copy from boundary array
+		copy_length := tileSize
+		for i := 1; i <= copy_length; i++ {
+			//fmt.Printf("copy_length = %d, i = %d\n", copy_length, i)
+			//tileMatrix[0][i] = g_top_row[tileStartCol+(i-1)]
+			rowbuf[i] = C.int(g_top_row[tileStartCol+(i-1)])
+		}
+
+		//tileMatrix[0][0] = g_top_row[tileStartCol-1]
+		rowbuf[0] = C.int(g_top_row[tileStartCol-1])
+		colbuf[0] = rowbuf[0]
+	}
+
+	// copy left col
+	if my_left >= 0 {
+
+		for i := 1; i <= tileSize; i++ {
+			left_tile_idx := (my_y)*n + my_left
+			//tileMatrix[i][0] = vdp[left_tile_idx][tileSize+(i-1)]
+			colbuf[i] = C.int(vdp[left_tile_idx][tileSize+(i-1)])
+		}
+
+	} else {
+		copy_length := tileSize
+		for i := 1; i <= copy_length; i++ {
+			//tileMatrix[i][0] = g_left_col[tileStartRow+(i-1)]
+			colbuf[i] = C.int(g_left_col[tileStartRow+(i-1)])
+		}
+
+		//tileMatrix[0][0] = g_left_col[tileStartRow-1]
+		colbuf[0] = C.int(g_left_col[tileStartRow-1])
+		rowbuf[0] = colbuf[0]
+	}
+
+	if rowbuf[0] == -1 && colbuf[0] == -1 {
+		diag_tile_idx := (my_up)*n + my_left
+		rowbuf[0] = C.int(vdp[diag_tile_idx][tileSize-1])
+		colbuf[0] = rowbuf[0]
+	}
+
+	// step 2: fill the matrix
+
+	first_substr := first[tileStartRow-1 : tileStartRow-1+tileSize]
+	second_substr := second[tileStartCol-1 : tileStartCol-1+tileSize]
+
+	c_first_substr := C.CString(first_substr)
+	defer C.free(unsafe.Pointer(c_first_substr))
+
+	c_second_substr := C.CString(second_substr)
+	defer C.free(unsafe.Pointer(c_second_substr))
+
+	C.c_handle_tile(
+		C.int(tileSize),
+		(*C.int)(unsafe.Pointer(&rowbuf[0])),
+		(*C.int)(unsafe.Pointer(&colbuf[0])),
+		c_first_substr,
+		c_second_substr)
+
+	// step 3: copy the output boundary
+
+	this_tile_idx := (my_y)*n + my_x
+
+	//fmt.Printf("m = %d, n= %d ,my_x = %d,my_y = %d\n", m, n, my_x, my_y)
+	//fmt.Printf("bottom_row_id, right_col_id: %d, %d\n", bottom_row_id, right_col_id)
+	//fmt.Printf("this_tile_idx = %d-----\n", this_tile_idx)
+	for i := 0; i < tileSize; i++ {
+		vdp[this_tile_idx][i] = int(rowbuf[i])
+		vdp[this_tile_idx][tileSize+i] = int(colbuf[i])
+	}
+
+}
+
 func computeFullTileC(first, second string, dp [][]int, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond int) {
 
 	first_substr := first[tileStartRow-1 : tileStartRow-1+tileSize]
@@ -571,7 +676,12 @@ func editDistanceParallel_largeX(first, second string, tileSize int, useavx bool
 				if isNonFullTile {
 					computeTileRegular_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
 				} else {
-					computeTileFull_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+					if useavx && tileSize > 64 && (tileSize&(tileSize-1)) == 0 {
+						computeTileFull_largeCX(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+						//computeTileFull_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+					} else {
+						computeTileFull_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+					}
 				}
 
 			}(first, second, vdp, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond, g_top_row, g_left_col)
