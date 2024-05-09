@@ -120,8 +120,6 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 	m := ((lenFirst) + tileSize - 1) / tileSize
 	n := ((lenSecond) + tileSize - 1) / tileSize
 
-	//fmt.Printf("m = %d, n= %d, tileSize = %d, tileStartRow = %d, tileStartCol = %d\n", m, n, tileSize, tileStartRow, tileStartCol)
-
 	tileMatrix := make([][]int, tileSize+1)
 	for i := range tileMatrix {
 		tileMatrix[i] = make([]int, tileSize+1)
@@ -138,8 +136,8 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 	// copy top row
 	if my_up >= 0 {
 		//copy from up tile
+		up_tile_idx := (my_up)*n + (my_x)
 		for i := 1; i <= tileSize; i++ {
-			up_tile_idx := (my_up)*n + (my_x)
 			tileMatrix[0][i] = vdp[up_tile_idx][i-1]
 		}
 
@@ -151,8 +149,7 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 		}
 
 		for i := 1; i <= copy_length; i++ {
-			//fmt.Printf("copy_length = %d, i = %d\n", copy_length, i)
-			tileMatrix[0][i] = g_top_row[tileStartCol+(i-1)] // wrong!!!!
+			tileMatrix[0][i] = g_top_row[tileStartCol+(i-1)]
 		}
 
 		tileMatrix[0][0] = g_top_row[tileStartCol-1]
@@ -160,9 +157,8 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 
 	// copy left col
 	if my_left >= 0 {
-
+		left_tile_idx := (my_y)*n + my_left
 		for i := 1; i <= tileSize; i++ {
-			left_tile_idx := (my_y)*n + my_left
 			tileMatrix[i][0] = vdp[left_tile_idx][tileSize+(i-1)]
 		}
 
@@ -196,7 +192,6 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 				if first[row-1] == second[col-1] {
 					cost = 0
 				}
-				//dp[row][col] = min3(dp[row-1][col]+1, dp[row][col-1]+1, dp[row-1][col-1]+cost)
 
 				local_tile_row := i + 1
 				local_tile_col := j + 1
@@ -224,9 +219,6 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 
 	this_tile_idx := (my_y)*n + my_x
 
-	//fmt.Printf("m = %d, n= %d ,my_x = %d,my_y = %d\n", m, n, my_x, my_y)
-	//fmt.Printf("bottom_row_id, right_col_id: %d, %d\n", bottom_row_id, right_col_id)
-	//fmt.Printf("this_tile_idx = %d-----\n", this_tile_idx)
 	for i := 0; i < tileSize; i++ {
 		vdp[this_tile_idx][i] = tileMatrix[bottom_row_id][i+1]
 		vdp[this_tile_idx][tileSize+i] = tileMatrix[i+1][right_col_id]
@@ -242,16 +234,9 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 
 func computeTileFull_large(first, second string, vdp [][]int, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond int, g_top_row, g_left_col []int) {
 
-	// step 1: make the matrix for the tile, copy the input boundary
-	// vdp: [first_half is bottom, second_half is right]
-	// my tile (x,y): 1: (x, y-1)[first_half] 2: (x-1, y)[second_half]; 3: (x-1,y-1)[first_half][tilesize -1]
-	// out of boundary -- go to the gtop row and gleft col.
+	//like a reguar tile handling --- just ignore some boundary checking
 
-	// m is height, n is width
-	//m := ((lenFirst) + tileSize - 1) / tileSize
 	n := ((lenSecond) + tileSize - 1) / tileSize
-
-	//fmt.Printf("m = %d, n= %d, tileSize = %d, tileStartRow = %d, tileStartCol = %d\n", m, n, tileSize, tileStartRow, tileStartCol)
 
 	tileMatrix := make([][]int, tileSize+1)
 	for i := range tileMatrix {
@@ -266,39 +251,27 @@ func computeTileFull_large(first, second string, vdp [][]int, tileStartRow, tile
 
 	tileMatrix[0][0] = -1
 
-	// copy top row
 	if my_up >= 0 {
-		//copy from up tile
+		up_tile_idx := (my_up)*n + (my_x)
 		for i := 1; i <= tileSize; i++ {
-			up_tile_idx := (my_up)*n + (my_x)
 			tileMatrix[0][i] = vdp[up_tile_idx][i-1]
 		}
-
 	} else {
-		//copy from boundary array
-		copy_length := tileSize
-		for i := 1; i <= copy_length; i++ {
-			//fmt.Printf("copy_length = %d, i = %d\n", copy_length, i)
-			tileMatrix[0][i] = g_top_row[tileStartCol+(i-1)] // wrong!!!!
+		for i := 1; i <= tileSize; i++ {
+			tileMatrix[0][i] = g_top_row[tileStartCol+(i-1)]
 		}
-
 		tileMatrix[0][0] = g_top_row[tileStartCol-1]
 	}
 
-	// copy left col
 	if my_left >= 0 {
-
+		left_tile_idx := (my_y)*n + my_left
 		for i := 1; i <= tileSize; i++ {
-			left_tile_idx := (my_y)*n + my_left
 			tileMatrix[i][0] = vdp[left_tile_idx][tileSize+(i-1)]
 		}
-
 	} else {
-		copy_length := tileSize
-		for i := 1; i <= copy_length; i++ {
+		for i := 1; i <= tileSize; i++ {
 			tileMatrix[i][0] = g_left_col[tileStartRow+(i-1)]
 		}
-
 		tileMatrix[0][0] = g_left_col[tileStartRow-1]
 	}
 
@@ -306,8 +279,6 @@ func computeTileFull_large(first, second string, vdp [][]int, tileStartRow, tile
 		diag_tile_idx := (my_up)*n + my_left
 		tileMatrix[0][0] = vdp[diag_tile_idx][tileSize-1]
 	}
-
-	// step 2: fill the matrix
 
 	for i := 0; i < tileSize; i++ {
 		for j := 0; j < tileSize; j++ {
@@ -318,7 +289,6 @@ func computeTileFull_large(first, second string, vdp [][]int, tileStartRow, tile
 			if first[row-1] == second[col-1] {
 				cost = 0
 			}
-			//dp[row][col] = min3(dp[row-1][col]+1, dp[row][col-1]+1, dp[row-1][col-1]+cost)
 
 			local_tile_row := i + 1
 			local_tile_col := j + 1
@@ -331,17 +301,10 @@ func computeTileFull_large(first, second string, vdp [][]int, tileStartRow, tile
 		}
 	}
 
-	// step 3: copy the output boundary
-
 	bottom_row_id := tileSize
-
 	right_col_id := tileSize
-
 	this_tile_idx := (my_y)*n + my_x
 
-	//fmt.Printf("m = %d, n= %d ,my_x = %d,my_y = %d\n", m, n, my_x, my_y)
-	//fmt.Printf("bottom_row_id, right_col_id: %d, %d\n", bottom_row_id, right_col_id)
-	//fmt.Printf("this_tile_idx = %d-----\n", this_tile_idx)
 	for i := 0; i < tileSize; i++ {
 		vdp[this_tile_idx][i] = tileMatrix[bottom_row_id][i+1]
 		vdp[this_tile_idx][tileSize+i] = tileMatrix[i+1][right_col_id]
@@ -351,20 +314,13 @@ func computeTileFull_large(first, second string, vdp [][]int, tileStartRow, tile
 
 func computeTileFull_largeCX(first, second string, vdp [][]int, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond int, g_top_row, g_left_col []int) {
 
-	// step 1: make the matrix for the tile, copy the input boundary
-	// vdp: [first_half is bottom, second_half is right]
-	// my tile (x,y): 1: (x, y-1)[first_half] 2: (x-1, y)[second_half]; 3: (x-1,y-1)[first_half][tilesize -1]
-	// out of boundary -- go to the gtop row and gleft col.
+	// we reuse the c code to accelerate tile handling.
 
-	// m is height, n is width
-	//m := ((lenFirst) + tileSize - 1) / tileSize
+	// step 1: copy boundary inputs to the c function
+
 	n := ((lenSecond) + tileSize - 1) / tileSize
-
 	my_x := (tileStartCol - 1) / tileSize
 	my_y := (tileStartRow - 1) / tileSize
-
-	my_up := my_y - 1
-	my_left := my_x - 1
 
 	rowbuf := make([]C.int, (tileSize + 1))
 	colbuf := make([]C.int, (tileSize + 1))
@@ -372,52 +328,36 @@ func computeTileFull_largeCX(first, second string, vdp [][]int, tileStartRow, ti
 	rowbuf[0] = -1
 	colbuf[0] = -1
 
-	// copy top row
-	if my_up >= 0 {
-		//copy from up tile
+	if my_y >= 1 {
+		up_tile_idx := (my_y-1)*n + (my_x)
 		for i := 1; i <= tileSize; i++ {
-			up_tile_idx := (my_up)*n + (my_x)
-			//tileMatrix[0][i] = vdp[up_tile_idx][i-1]
 			rowbuf[i] = C.int(vdp[up_tile_idx][i-1])
 		}
 
 	} else {
-		//copy from boundary array
-		copy_length := tileSize
-		for i := 1; i <= copy_length; i++ {
-			//fmt.Printf("copy_length = %d, i = %d\n", copy_length, i)
-			//tileMatrix[0][i] = g_top_row[tileStartCol+(i-1)]
+		for i := 1; i <= tileSize; i++ {
 			rowbuf[i] = C.int(g_top_row[tileStartCol+(i-1)])
 		}
-
-		//tileMatrix[0][0] = g_top_row[tileStartCol-1]
 		rowbuf[0] = C.int(g_top_row[tileStartCol-1])
 		colbuf[0] = rowbuf[0]
 	}
 
-	// copy left col
-	if my_left >= 0 {
-
+	if my_x >= 1 {
+		left_tile_idx := (my_y)*n + (my_x - 1)
 		for i := 1; i <= tileSize; i++ {
-			left_tile_idx := (my_y)*n + my_left
-			//tileMatrix[i][0] = vdp[left_tile_idx][tileSize+(i-1)]
 			colbuf[i] = C.int(vdp[left_tile_idx][tileSize+(i-1)])
 		}
 
 	} else {
-		copy_length := tileSize
-		for i := 1; i <= copy_length; i++ {
-			//tileMatrix[i][0] = g_left_col[tileStartRow+(i-1)]
+		for i := 1; i <= tileSize; i++ {
 			colbuf[i] = C.int(g_left_col[tileStartRow+(i-1)])
 		}
-
-		//tileMatrix[0][0] = g_left_col[tileStartRow-1]
 		colbuf[0] = C.int(g_left_col[tileStartRow-1])
 		rowbuf[0] = colbuf[0]
 	}
 
 	if rowbuf[0] == -1 && colbuf[0] == -1 {
-		diag_tile_idx := (my_up)*n + my_left
+		diag_tile_idx := (my_y-1)*n + (my_x - 1)
 		rowbuf[0] = C.int(vdp[diag_tile_idx][tileSize-1])
 		colbuf[0] = rowbuf[0]
 	}
@@ -443,10 +383,6 @@ func computeTileFull_largeCX(first, second string, vdp [][]int, tileStartRow, ti
 	// step 3: copy the output boundary
 
 	this_tile_idx := (my_y)*n + my_x
-
-	//fmt.Printf("m = %d, n= %d ,my_x = %d,my_y = %d\n", m, n, my_x, my_y)
-	//fmt.Printf("bottom_row_id, right_col_id: %d, %d\n", bottom_row_id, right_col_id)
-	//fmt.Printf("this_tile_idx = %d-----\n", this_tile_idx)
 	for i := 0; i < tileSize; i++ {
 		vdp[this_tile_idx][i] = int(rowbuf[i])
 		vdp[this_tile_idx][tileSize+i] = int(colbuf[i])
@@ -566,63 +502,6 @@ func editDistanceParallel(first, second string, tileSize int, useavx bool) int {
 	return dp[lenFirst][lenSecond]
 }
 
-func editDistanceParallel_large(first, second string, tileSize int, useavx bool) int {
-
-	lenFirst, lenSecond := len(first), len(second)
-
-	if lenFirst == 0 || lenSecond == 0 {
-		return lenFirst + lenSecond
-	}
-
-	g_top_row := make([]int, lenSecond+1)
-	for j := 0; j <= lenSecond; j++ {
-		g_top_row[j] = j
-	}
-
-	g_left_col := make([]int, lenFirst+1)
-	for i := 0; i <= lenFirst; i++ {
-		g_left_col[i] = i
-	}
-
-	m := ((lenFirst) + tileSize - 1) / tileSize
-	n := ((lenSecond) + tileSize - 1) / tileSize
-
-	vdp := make([][]int, m*n)
-	for i := range vdp {
-		vdp[i] = make([]int, 2*tileSize)
-	}
-
-	var wg sync.WaitGroup
-
-	totalWavefronts := n + m - 1
-
-	for wave := 0; wave < totalWavefronts; wave++ {
-		minStart := max(0, wave-n+1)
-		maxStart := min(wave, m-1)
-
-		for start := minStart; start <= maxStart; start++ {
-
-			tileStartRow := start*tileSize + 1
-			tileStartCol := (wave-start)*tileSize + 1
-
-			wg.Add(1)
-
-			go func(p1, p2 string, p3 [][]int, p4, p5, p6, p7, p8 int, p9, p10 []int) {
-
-				defer wg.Done()
-
-				computeTileRegular_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
-
-			}(first, second, vdp, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond, g_top_row, g_left_col)
-
-		}
-
-		wg.Wait()
-	}
-
-	return vdp[m*n-1][tileSize-1]
-}
-
 func editDistanceParallel_largeX(first, second string, tileSize int, useavx bool) int {
 
 	lenFirst, lenSecond := len(first), len(second)
@@ -643,6 +522,10 @@ func editDistanceParallel_largeX(first, second string, tileSize int, useavx bool
 
 	m := ((lenFirst) + tileSize - 1) / tileSize
 	n := ((lenSecond) + tileSize - 1) / tileSize
+
+	// vdp is a 2d array looking like the old dp matrix for the purpose of code resuing.
+	// but each vdp[i] is the outer boundray of one tile (the bottom row and the right col).
+	// vdp[m*n-1][tileSize-1] is the final ed value. Must set it in case of non-full last tile.
 
 	vdp := make([][]int, m*n)
 	for i := range vdp {
