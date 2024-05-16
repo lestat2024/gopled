@@ -66,6 +66,46 @@ void c_handle_tile(int ts,
 }
 
 
+void c_handle_tile_vdp(int ts,
+		    int* uprow,
+			int* leftcol,
+			int diagvalue,
+		    int* newboundary,
+		    const char* first_str,
+		     const char* second_str)
+{
+  int md = ts + 1;
+  int* wholematrix = (int*)malloc((md*md)*sizeof(int));
+  
+  for(int i = 1; i < md; i++)
+    {
+      wholematrix[0 * md + i] = uprow[i-1];
+    }
+  for(int i = 1; i < md; i++)
+    {
+      wholematrix[i * md + 0] = leftcol[i-1];
+    }
+
+	wholematrix[0] = diagvalue;
+
+
+  //__eddpkernel(ts, first_str, second_str, wholematrix);
+  __eddpkernel_avx2(ts, first_str, second_str, wholematrix);
+
+  for(int i = 0; i < ts; i++)
+    {
+      newboundary[i] = wholematrix[ts * md + (i + 1)];
+    }
+  for(int i = 0; i < ts; i++)
+    {
+      newboundary[i+ts] = wholematrix[(i + 1) * md + ts];
+    }
+  
+  free(wholematrix);  
+}
+
+
+
 void __eddpkernel(int ts,
 		const char* first_str,
 		const char* second_str,

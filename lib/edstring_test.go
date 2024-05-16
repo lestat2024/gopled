@@ -166,3 +166,18 @@ func FuzzParallelSec(f *testing.F) {
 	})
 
 }
+
+func BenchmarkEditDistanceParallel1k(b *testing.B) {
+
+	for i := 0; i < b.N; i++ {
+
+		alen := 10000
+		str1 := generateRandomString(alen)
+		str2 := generateRandomString(alen)
+
+		ed := EditDistanceParallel(str1, str2, 1024)
+
+		fmt.Printf("alen = %d, ed = %d\n", alen, ed)
+	}
+
+}

@@ -9,8 +9,15 @@ void c_handle_tile(int ts,
 		    int* rowbuf,
 		    int* colbuf,
 		    const char* first_str,
-		     const char* second_str);
+		    const char* second_str);
 
+void c_handle_tile_vdp(int ts,
+		    int* uprow,
+			int* leftcol,
+			int diagvalue,
+		    int* newboundary,
+		    const char* first_str,
+		    const char* second_str);
 
 void __eddpkernel(int ts,
 		const char* first_str,

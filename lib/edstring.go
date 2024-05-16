@@ -232,10 +232,15 @@ func computeTileRegular_large(first, second string, vdp [][]int, tileStartRow, t
 
 }
 
-func computeTileFull_large(first, second string, vdp [][]int, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond int, g_top_row, g_left_col []int) {
+func computeTileRegular_largeC(first, second string, vdp [][]C.int, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond int, g_top_row, g_left_col []C.int) {
 
-	//like a reguar tile handling --- just ignore some boundary checking
+	// step 1: make the matrix for the tile, copy the input boundary
+	// vdp: [first_half is bottom, second_half is right]
+	// my tile (x,y): 1: (x, y-1)[first_half] 2: (x-1, y)[second_half]; 3: (x-1,y-1)[first_half][tilesize -1]
+	// out of boundary -- go to the gtop row and gleft col.
 
+	// m is height, n is width
+	m := ((lenFirst) + tileSize - 1) / tileSize
 	n := ((lenSecond) + tileSize - 1) / tileSize
 
 	tileMatrix := make([][]int, tileSize+1)
@@ -251,63 +256,101 @@ func computeTileFull_large(first, second string, vdp [][]int, tileStartRow, tile
 
 	tileMatrix[0][0] = -1
 
+	// copy top row
 	if my_up >= 0 {
+		//copy from up tile
 		up_tile_idx := (my_up)*n + (my_x)
 		for i := 1; i <= tileSize; i++ {
-			tileMatrix[0][i] = vdp[up_tile_idx][i-1]
+			tileMatrix[0][i] = int(vdp[up_tile_idx][i-1])
 		}
+
 	} else {
-		for i := 1; i <= tileSize; i++ {
-			tileMatrix[0][i] = g_top_row[tileStartCol+(i-1)]
+		//copy from boundary array
+		copy_length := tileSize
+		if (tileStartCol-1)+tileSize > lenSecond {
+			copy_length = lenSecond - tileStartCol + 1
 		}
-		tileMatrix[0][0] = g_top_row[tileStartCol-1]
+
+		for i := 1; i <= copy_length; i++ {
+			tileMatrix[0][i] = int(g_top_row[tileStartCol+(i-1)])
+		}
+
+		tileMatrix[0][0] = int(g_top_row[tileStartCol-1])
 	}
 
+	// copy left col
 	if my_left >= 0 {
 		left_tile_idx := (my_y)*n + my_left
 		for i := 1; i <= tileSize; i++ {
-			tileMatrix[i][0] = vdp[left_tile_idx][tileSize+(i-1)]
+			tileMatrix[i][0] = int(vdp[left_tile_idx][tileSize+(i-1)])
 		}
+
 	} else {
-		for i := 1; i <= tileSize; i++ {
-			tileMatrix[i][0] = g_left_col[tileStartRow+(i-1)]
+		copy_length := tileSize
+		if (tileStartRow-1)+tileSize > lenFirst {
+			copy_length = lenFirst - tileStartRow + 1
 		}
-		tileMatrix[0][0] = g_left_col[tileStartRow-1]
+		for i := 1; i <= copy_length; i++ {
+			tileMatrix[i][0] = int(g_left_col[tileStartRow+(i-1)])
+		}
+
+		tileMatrix[0][0] = int(g_left_col[tileStartRow-1])
 	}
 
 	if tileMatrix[0][0] == -1 {
 		diag_tile_idx := (my_up)*n + my_left
-		tileMatrix[0][0] = vdp[diag_tile_idx][tileSize-1]
+		tileMatrix[0][0] = int(vdp[diag_tile_idx][tileSize-1])
 	}
+
+	// step 2: fill the matrix
 
 	for i := 0; i < tileSize; i++ {
 		for j := 0; j < tileSize; j++ {
 			row := tileStartRow + i
 			col := tileStartCol + j
 
-			cost := 1
-			if first[row-1] == second[col-1] {
-				cost = 0
+			if row <= lenFirst && col <= lenSecond {
+
+				cost := 1
+				if first[row-1] == second[col-1] {
+					cost = 0
+				}
+
+				local_tile_row := i + 1
+				local_tile_col := j + 1
+
+				tileMatrix[local_tile_row][local_tile_col] = min3(
+					tileMatrix[local_tile_row-1][local_tile_col]+1,
+					tileMatrix[local_tile_row][local_tile_col-1]+1,
+					tileMatrix[local_tile_row-1][local_tile_col-1]+cost)
+
 			}
-
-			local_tile_row := i + 1
-			local_tile_col := j + 1
-
-			tileMatrix[local_tile_row][local_tile_col] = min3(
-				tileMatrix[local_tile_row-1][local_tile_col]+1,
-				tileMatrix[local_tile_row][local_tile_col-1]+1,
-				tileMatrix[local_tile_row-1][local_tile_col-1]+cost)
-
 		}
 	}
 
+	// step 3: copy the output boundary
+
 	bottom_row_id := tileSize
+	if (tileStartRow-1)+tileSize > lenFirst {
+		bottom_row_id = lenFirst - tileStartRow + 1
+	}
+
 	right_col_id := tileSize
+	if (tileStartCol-1)+tileSize > lenSecond {
+		right_col_id = lenSecond - tileStartCol + 1
+	}
+
 	this_tile_idx := (my_y)*n + my_x
 
 	for i := 0; i < tileSize; i++ {
-		vdp[this_tile_idx][i] = tileMatrix[bottom_row_id][i+1]
-		vdp[this_tile_idx][tileSize+i] = tileMatrix[i+1][right_col_id]
+		vdp[this_tile_idx][i] = C.int(tileMatrix[bottom_row_id][i+1])
+		vdp[this_tile_idx][tileSize+i] = C.int(tileMatrix[i+1][right_col_id])
+	}
+
+	// step 4: if this is the right tile, we must copy the last value to the middle position of vdp[last_tile]
+
+	if my_x == (n-1) && my_y == (m-1) {
+		vdp[this_tile_idx][tileSize-1] = C.int(tileMatrix[bottom_row_id][right_col_id])
 	}
 
 }
@@ -387,6 +430,69 @@ func computeTileFull_largeCX(first, second string, vdp [][]int, tileStartRow, ti
 		vdp[this_tile_idx][i] = int(rowbuf[i])
 		vdp[this_tile_idx][tileSize+i] = int(colbuf[i])
 	}
+
+}
+
+func computeTileFull_largeCX_NC(first, second string, vdp [][]C.int, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond int, g_top_row, g_left_col []C.int) {
+
+	// we reuse the c code to accelerate tile handling.
+
+	// step 1: copy boundary inputs to the c function
+
+	n := ((lenSecond) + tileSize - 1) / tileSize
+	my_x := (tileStartCol - 1) / tileSize
+	my_y := (tileStartRow - 1) / tileSize
+
+	var cuprow *C.int
+	var cleftcol *C.int
+	var cdiagvalue C.int
+	var cnewboundary *C.int
+
+	cdiagvalue = C.int(-1)
+
+	if my_y >= 1 {
+		up_tile_idx := (my_y-1)*n + (my_x)
+		cuprow = (*C.int)(unsafe.Pointer(&vdp[up_tile_idx][0]))
+	} else {
+		cuprow = (*C.int)(unsafe.Pointer(&g_top_row[tileStartCol]))
+		cdiagvalue = (g_top_row[tileStartCol-1])
+	}
+
+	if my_x >= 1 {
+		left_tile_idx := (my_y)*n + (my_x - 1)
+		cleftcol = (*C.int)(unsafe.Pointer(&vdp[left_tile_idx][tileSize]))
+	} else {
+		cleftcol = (*C.int)(unsafe.Pointer(&g_left_col[tileStartRow]))
+		cdiagvalue = (g_left_col[tileStartRow-1])
+	}
+
+	if cdiagvalue == C.int(-1) {
+		diag_tile_idx := (my_y-1)*n + (my_x - 1)
+		cdiagvalue = (vdp[diag_tile_idx][tileSize-1])
+	}
+
+	// step 2: fill the matrix
+
+	first_substr := first[tileStartRow-1 : tileStartRow-1+tileSize]
+	second_substr := second[tileStartCol-1 : tileStartCol-1+tileSize]
+
+	c_first_substr := C.CString(first_substr)
+	defer C.free(unsafe.Pointer(c_first_substr))
+
+	c_second_substr := C.CString(second_substr)
+	defer C.free(unsafe.Pointer(c_second_substr))
+
+	this_tile_idx := (my_y)*n + my_x
+	cnewboundary = (*C.int)(unsafe.Pointer(&vdp[this_tile_idx][0]))
+
+	C.c_handle_tile_vdp(
+		C.int(tileSize),
+		cuprow,
+		cleftcol,
+		cdiagvalue,
+		cnewboundary,
+		c_first_substr,
+		c_second_substr)
 
 }
 
@@ -561,9 +667,8 @@ func editDistanceParallel_largeX(first, second string, tileSize int, useavx bool
 				} else {
 					if useavx && tileSize > 64 && (tileSize&(tileSize-1)) == 0 {
 						computeTileFull_largeCX(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
-						//computeTileFull_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
 					} else {
-						computeTileFull_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+						computeTileRegular_large(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
 					}
 				}
 
@@ -575,6 +680,81 @@ func editDistanceParallel_largeX(first, second string, tileSize int, useavx bool
 	}
 
 	return vdp[m*n-1][tileSize-1]
+}
+
+func editDistanceParallel_largeX_C(first, second string, tileSize int, useavx bool) int {
+
+	lenFirst, lenSecond := len(first), len(second)
+
+	if lenFirst == 0 || lenSecond == 0 {
+		return lenFirst + lenSecond
+	}
+
+	g_top_row := make([]C.int, lenSecond+1)
+	for j := 0; j <= lenSecond; j++ {
+		g_top_row[j] = C.int(j)
+	}
+
+	g_left_col := make([]C.int, lenFirst+1)
+	for i := 0; i <= lenFirst; i++ {
+		g_left_col[i] = C.int(i)
+	}
+
+	m := ((lenFirst) + tileSize - 1) / tileSize
+	n := ((lenSecond) + tileSize - 1) / tileSize
+
+	// vdp is a 2d array looking like the old dp matrix for the purpose of code resuing.
+	// but each vdp[i] is the outer boundray of one tile (the bottom row and the right col).
+	// vdp[m*n-1][tileSize-1] is the final ed value. Must set it in case of non-full last tile.
+
+	vdp := make([][]C.int, m*n)
+	for i := range vdp {
+		vdp[i] = make([]C.int, 2*tileSize)
+	}
+
+	var wg sync.WaitGroup
+
+	totalWavefronts := n + m - 1
+
+	for wave := 0; wave < totalWavefronts; wave++ {
+		minStart := max(0, wave-n+1)
+		maxStart := min(wave, m-1)
+
+		for start := minStart; start <= maxStart; start++ {
+
+			tileStartRow := start*tileSize + 1
+			tileStartCol := (wave-start)*tileSize + 1
+
+			wg.Add(1)
+
+			isNonFullTile := false
+			if (tileStartRow-1)+tileSize > lenFirst || (tileStartCol-1)+tileSize > lenSecond {
+				isNonFullTile = true
+			}
+
+			go func(p1, p2 string, p3 [][]C.int, p4, p5, p6, p7, p8 int, p9, p10 []C.int) {
+
+				defer wg.Done()
+
+				if isNonFullTile {
+					computeTileRegular_largeC(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+				} else {
+					if useavx && tileSize > 64 && (tileSize&(tileSize-1)) == 0 {
+						computeTileFull_largeCX_NC(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+						//computeTileRegular_largeC(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+					} else {
+						computeTileRegular_largeC(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
+					}
+				}
+
+			}(first, second, vdp, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond, g_top_row, g_left_col)
+
+		}
+
+		wg.Wait()
+	}
+
+	return int(vdp[m*n-1][tileSize-1])
 }
 
 // ------------------------------------------------------------------------------------------------------------------
@@ -599,6 +779,7 @@ func EditDistanceParallel(first string, second string, tilesize ...int) int {
 
 	useavx := (C.c_check_avx2_support() == 1)
 
-	return editDistanceParallel_largeX(first, second, tsv, useavx)
+	//return editDistanceParallel_largeX(first, second, tsv, useavx)
 
+	return editDistanceParallel_largeX_C(first, second, tsv, useavx)
 }
