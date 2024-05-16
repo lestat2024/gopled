@@ -353,6 +353,11 @@ func computeTileRegular_largeC(first, second string, vdp [][]C.int, tileStartRow
 		vdp[this_tile_idx][tileSize-1] = C.int(tileMatrix[bottom_row_id][right_col_id])
 	}
 
+	for i := range tileMatrix {
+		tileMatrix[i] = nil
+	}
+	tileMatrix = nil
+
 }
 
 func computeTileFull_largeCX(first, second string, vdp [][]int, tileStartRow, tileStartCol, tileSize, lenFirst, lenSecond int, g_top_row, g_left_col []int) {
@@ -368,8 +373,6 @@ func computeTileFull_largeCX(first, second string, vdp [][]int, tileStartRow, ti
 	rowbuf := make([]C.int, (tileSize + 1))
 	colbuf := make([]C.int, (tileSize + 1))
 
-	
-	
 	rowbuf[0] = -1
 	colbuf[0] = -1
 
@@ -638,9 +641,9 @@ func editDistanceParallel_largeX(first, second string, tileSize int, useavx bool
 	// vdp[m*n-1][tileSize-1] is the final ed value. Must set it in case of non-full last tile.
 
 	vdp := make([][]int, m*n)
-//	for i := range vdp {
-//		vdp[i] = make([]int, 2*tileSize)
-//	}
+	//	for i := range vdp {
+	//		vdp[i] = make([]int, 2*tileSize)
+	//	}
 
 	var wg sync.WaitGroup
 
@@ -662,7 +665,7 @@ func editDistanceParallel_largeX(first, second string, tileSize int, useavx bool
 				isNonFullTile = true
 			}
 
-			vdp[start * n + (wave-start)] = make([]int, 2*tileSize)
+			vdp[start*n+(wave-start)] = make([]int, 2*tileSize)
 
 			go func(p1, p2 string, p3 [][]int, p4, p5, p6, p7, p8 int, p9, p10 []int) {
 
@@ -684,21 +687,20 @@ func editDistanceParallel_largeX(first, second string, tileSize int, useavx bool
 
 		wg.Wait()
 
-
 		if wave > 5 {
-			
-			go func () {
-				
-			   uwave := wave - 3
-			   uminStart := max(0, uwave-n+1)
-			   umaxStart := min(uwave, m-1)
-			   for ustart := uminStart; ustart <= umaxStart; ustart++ {	   
-				   vdp[ustart * n + (uwave-ustart)] = nil
-			   }
-				
+
+			go func() {
+
+				uwave := wave - 3
+				uminStart := max(0, uwave-n+1)
+				umaxStart := min(uwave, m-1)
+				for ustart := uminStart; ustart <= umaxStart; ustart++ {
+					vdp[ustart*n+(uwave-ustart)] = nil
+				}
+
 			}()
 		}
-			
+
 	}
 
 	return vdp[m*n-1][tileSize-1]
@@ -730,9 +732,9 @@ func editDistanceParallel_largeX_C(first, second string, tileSize int, useavx bo
 	// vdp[m*n-1][tileSize-1] is the final ed value. Must set it in case of non-full last tile.
 
 	vdp := make([][]C.int, m*n)
-	for i := range vdp {
-		vdp[i] = make([]C.int, 2*tileSize)
-	}
+	//for i := range vdp {
+	//	vdp[i] = make([]C.int, 2*tileSize)
+	//}
 
 	var wg sync.WaitGroup
 
@@ -754,6 +756,8 @@ func editDistanceParallel_largeX_C(first, second string, tileSize int, useavx bo
 				isNonFullTile = true
 			}
 
+			vdp[start*n+(wave-start)] = make([]C.int, 2*tileSize)
+
 			go func(p1, p2 string, p3 [][]C.int, p4, p5, p6, p7, p8 int, p9, p10 []C.int) {
 
 				defer wg.Done()
@@ -774,6 +778,21 @@ func editDistanceParallel_largeX_C(first, second string, tileSize int, useavx bo
 		}
 
 		wg.Wait()
+
+		if wave > 5 {
+
+			go func() {
+
+				uwave := wave - 3
+				uminStart := max(0, uwave-n+1)
+				umaxStart := min(uwave, m-1)
+				for ustart := uminStart; ustart <= umaxStart; ustart++ {
+					vdp[ustart*n+(uwave-ustart)] = nil
+				}
+
+			}()
+		}
+
 	}
 
 	return int(vdp[m*n-1][tileSize-1])

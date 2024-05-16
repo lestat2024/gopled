@@ -66,10 +66,10 @@ func main() {
 	fmt.Printf("Edit Distance (Parallel, Tiled & Diagonal): %d\n", distance)
 	fmt.Printf("Execution Time: %s\n", duration)
 
-	fmt.Printf("\n")
-	seqstart := time.Now()
-	seqdistance := gopled.EditDistance(str1, str2)
-	seqduration := time.Since(seqstart)
-	fmt.Printf("Edit Distance (seq): %d\n", seqdistance)
-	fmt.Printf("Seq Execution Time: %s\n", seqduration)
+	// fmt.Printf("\n")
+	// seqstart := time.Now()
+	// seqdistance := gopled.EditDistance(str1, str2)
+	// seqduration := time.Since(seqstart)
+	// fmt.Printf("Edit Distance (seq): %d\n", seqdistance)
+	// fmt.Printf("Seq Execution Time: %s\n", seqduration)
 }
